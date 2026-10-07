@@ -1,0 +1,226 @@
+{
+  "1": {
+    "inputs": {
+      "ckpt_name": "sd_xl_base_1.0.safetensors"
+    },
+    "class_type": "CheckpointLoaderSimple",
+    "_meta": { "title": "① 底模加载 (SDXL Base)" }
+  },
+  "2": {
+    "inputs": {
+      "text": "masterpiece, best quality, photorealistic, young professional Chinese woman 28yo, minimalist bright apartment, soft daylight, premium lifestyle, clean vertical composition",
+      "clip": ["1", 0]
+    },
+    "class_type": "CLIPTextEncode",
+    "_meta": { "title": "② 正向提示" }
+  },
+  "3": {
+    "inputs": {
+      "text": "worst quality, low quality, blurry, deformed hands, mutated product, distorted logo, cheap plastic look, dark scene, exaggerated expression, watermark",
+      "clip": ["1", 0]
+    },
+    "class_type": "CLIPTextEncode",
+    "_meta": { "title": "③ 负面提示" }
+  },
+  "4": {
+    "inputs": {
+      "width": 768,
+      "height": 1344,
+      "batch_size": 4
+    },
+    "class_type": "EmptyLatentImage",
+    "_meta": { "title": "④ 竖屏画布 768x1344 · batch4 快采" }
+  },
+  "5": {
+    "inputs": {
+      "seed": 88176001,
+      "steps": 14,
+      "cfg": 3.5,
+      "sampler_name": "dpmpp_2m",
+      "scheduler": "karras",
+      "denoise": 1.0,
+      "model": ["1", 1],
+      "positive": ["2", 0],
+      "negative": ["3", 0],
+      "latent_image": ["4", 0]
+    },
+    "class_type": "KSampler",
+    "_meta": { "title": "⑤ 快采采样 steps14/cfg3.5 (低步数候选)" }
+  },
+  "6": {
+    "inputs": {
+      "samples": ["5", 0],
+      "vae": ["1", 2]
+    },
+    "class_type": "VAEDecode",
+    "_meta": { "title": "⑥ 解码·4 候选" }
+  },
+  "7": {
+    "inputs": {
+      "filename_prefix": "lexy/turbo_candidates",
+      "images": ["6", 0]
+    },
+    "class_type": "SaveImage",
+    "_meta": { "title": "⑦ 存档·候选网格 (Gate6 人工挑 1)" }
+  },
+  "8": {
+    "inputs": {
+      "pixels": ["6", 0],
+      "vae": ["1", 2]
+    },
+    "class_type": "VAEEncode",
+    "_meta": { "title": "⑧ 回编码·批量精修" }
+  },
+  "9": {
+    "inputs": {
+      "text": "product fidelity critical: exact product shape, accurate brand logo, true colors, no deformation, no extra parts",
+      "clip": ["1", 0]
+    },
+    "class_type": "CLIPTextEncode",
+    "_meta": { "title": "⑨ 正向提示·产品保真" }
+  },
+  "10": {
+    "inputs": {
+      "seed": 88176002,
+      "steps": 10,
+      "cfg": 4.5,
+      "sampler_name": "dpmpp_2m",
+      "scheduler": "karras",
+      "denoise": 0.4,
+      "model": ["1", 1],
+      "positive": ["9", 0],
+      "negative": ["3", 0],
+      "latent_image": ["8", 0]
+    },
+    "class_type": "KSampler",
+    "_meta": { "title": "⑩ 批量精修 denoise0.4" }
+  },
+  "11": {
+    "inputs": {
+      "samples": ["10", 0],
+      "vae": ["1", 2]
+    },
+    "class_type": "VAEDecode",
+    "_meta": { "title": "⑪ 解码·精修候选" }
+  },
+  "12": {
+    "inputs": {
+      "filename_prefix": "lexy/turbo_refined",
+      "images": ["11", 0]
+    },
+    "class_type": "SaveImage",
+    "_meta": { "title": "⑫ 存档·精修候选网格" }
+  },
+  "13": {
+    "inputs": {
+      "upscale_method": "lanczos",
+      "width": 1536,
+      "height": 2368,
+      "crop": "disabled",
+      "image": ["11", 0]
+    },
+    "class_type": "ImageScale",
+    "_meta": { "title": "⑬ 2x 放大" }
+  },
+  "14": {
+    "inputs": {
+      "pixels": ["13", 0],
+      "vae": ["1", 2]
+    },
+    "class_type": "VAEEncode",
+    "_meta": { "title": "⑭ 回编码·细节增强" }
+  },
+  "15": {
+    "inputs": {
+      "text": "fine material texture, crisp micro-details, realistic reflections",
+      "clip": ["1", 0]
+    },
+    "class_type": "CLIPTextEncode",
+    "_meta": { "title": "⑮ 正向提示·质感" }
+  },
+  "16": {
+    "inputs": {
+      "seed": 88176003,
+      "steps": 8,
+      "cfg": 4.0,
+      "sampler_name": "dpmpp_2m",
+      "scheduler": "karras",
+      "denoise": 0.25,
+      "model": ["1", 1],
+      "positive": ["15", 0],
+      "negative": ["3", 0],
+      "latent_image": ["14", 0]
+    },
+    "class_type": "KSampler",
+    "_meta": { "title": "⑯ 细节增强 denoise0.25" }
+  },
+  "17": {
+    "inputs": {
+      "samples": ["16", 0],
+      "vae": ["1", 2]
+    },
+    "class_type": "VAEDecode",
+    "_meta": { "title": "⑰ 解码·增强候选" }
+  },
+  "18": {
+    "inputs": {
+      "upscale_method": "lanczos",
+      "width": 768,
+      "height": 1344,
+      "crop": "disabled",
+      "image": ["17", 0]
+    },
+    "class_type": "ImageScale",
+    "_meta": { "title": "⑱ 回缩至 768x1344" }
+  },
+  "19": {
+    "inputs": {
+      "filename_prefix": "lexy/turbo_final",
+      "images": ["18", 0]
+    },
+    "class_type": "SaveImage",
+    "_meta": { "title": "⑲ 输出·终帧网格" }
+  },
+  "20": {
+    "inputs": {
+      "text": "【快采策略】一次 batch=4 出 4 候选，人工挑最优后再过细节增强；快采帧仅用于筛选，不作为成品。"
+    },
+    "class_type": "Note",
+    "_meta": { "title": "⑳ 快采策略" }
+  },
+  "21": {
+    "inputs": {
+      "text": "【Gate8 红线】产品参考只允许真实照片(≥3角度)；终帧与 product-ref 比对一致后才进 MiniMax H3 图生视频。"
+    },
+    "class_type": "Note",
+    "_meta": { "title": "㉑ 红线告示" }
+  },
+  "22": {
+    "inputs": {
+      "text": "【参数锚点】768x1344 | 快采steps14/cfg3.5 | 精修steps10/denoise0.4 | 细节steps8/denoise0.25 | 4090 16G 下单镜约 90 秒"
+    },
+    "class_type": "Note",
+    "_meta": { "title": "㉒ 参数锚点" }
+  },
+  "23": {
+    "inputs": {
+      "text": "【与一致性版区别】一致性版(consistency-22-nodes)追求单镜极致一致；本版追求批量候选与筛选速度，用于 Gate6 早期淘汰。"
+    },
+    "class_type": "Note",
+    "_meta": { "title": "㉓ 画布分工" }
+  },
+  "24": {
+    "inputs": {
+      "text": "【留痕】候选/精修/终帧分别存 turbo_candidates / turbo_refined / turbo_final 前缀，按项目归档 trilogy/。"
+    },
+    "class_type": "Note",
+    "_meta": { "title": "㉔ 留痕规范" }
+  },
+  "25": {
+    "inputs": {
+      "text": "【硬件基线】RTX 4090 Laptop 16GB · ComfyUI 官方版 · SDXL Base 底模 · 官方 ffmpeg 封装。"
+    },
+    "class_type": "Note",
+    "_meta": { "title": "㉕ 硬件基线" }
+  }
+}

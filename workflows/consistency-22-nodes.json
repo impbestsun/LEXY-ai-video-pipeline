@@ -1,0 +1,205 @@
+{
+  "1": {
+    "inputs": {
+      "ckpt_name": "sd_xl_base_1.0.safetensors"
+    },
+    "class_type": "CheckpointLoaderSimple",
+    "_meta": { "title": "① 底模加载 (SDXL Base)" }
+  },
+  "2": {
+    "inputs": {
+      "text": "masterpiece, best quality, photorealistic, young professional Chinese woman 28yo, minimalist bright apartment, soft daylight, premium lifestyle, 3-second product moment, clean composition, vertical 9:16, subtle film grain",
+      "clip": ["1", 0]
+    },
+    "class_type": "CLIPTextEncode",
+    "_meta": { "title": "② 正向提示·底稿 (Gate3 人设锚点)" }
+  },
+  "3": {
+    "inputs": {
+      "text": "worst quality, low quality, blurry, deformed hands, extra fingers, mutated product, distorted logo, oversaturated, cheap plastic look, dark and dirty scene, exaggerated expression, crowds, watermark, text artifacts",
+      "clip": ["1", 0]
+    },
+    "class_type": "CLIPTextEncode",
+    "_meta": { "title": "③ 负面提示 (产品变形/廉价感/穷苦人设全禁)" }
+  },
+  "4": {
+    "inputs": {
+      "width": 768,
+      "height": 1344,
+      "batch_size": 1
+    },
+    "class_type": "EmptyLatentImage",
+    "_meta": { "title": "④ 竖屏画布 768x1344 (9:16)" }
+  },
+  "5": {
+    "inputs": {
+      "seed": 88175001,
+      "steps": 30,
+      "cfg": 7.0,
+      "sampler_name": "dpmpp_2m",
+      "scheduler": "karras",
+      "denoise": 1.0,
+      "model": ["1", 1],
+      "positive": ["2", 0],
+      "negative": ["3", 0],
+      "latent_image": ["4", 0]
+    },
+    "class_type": "KSampler",
+    "_meta": { "title": "⑤ 底稿采样 steps30/cfg7.0 (Gate5)" }
+  },
+  "6": {
+    "inputs": {
+      "samples": ["5", 0],
+      "vae": ["1", 2]
+    },
+    "class_type": "VAEDecode",
+    "_meta": { "title": "⑥ 解码·底稿帧" }
+  },
+  "7": {
+    "inputs": {
+      "filename_prefix": "lexy/gate5_base",
+      "images": ["6", 0]
+    },
+    "class_type": "SaveImage",
+    "_meta": { "title": "⑦ 存档·Gate5 底稿 (留痕)" }
+  },
+  "8": {
+    "inputs": {
+      "pixels": ["6", 0],
+      "vae": ["1", 2]
+    },
+    "class_type": "VAEEncode",
+    "_meta": { "title": "⑧ 回编码·进入精修" }
+  },
+  "9": {
+    "inputs": {
+      "text": "product fidelity critical: exact product shape, correct proportions, accurate brand logo, true colors, no deformation, no extra parts, physically plausible interaction with hands",
+      "clip": ["1", 0]
+    },
+    "class_type": "CLIPTextEncode",
+    "_meta": { "title": "⑨ 正向提示·产品保真 (Gate8 前置)" }
+  },
+  "10": {
+    "inputs": {
+      "seed": 88175002,
+      "steps": 18,
+      "cfg": 6.0,
+      "sampler_name": "dpmpp_2m",
+      "scheduler": "karras",
+      "denoise": 0.35,
+      "model": ["1", 1],
+      "positive": ["9", 0],
+      "negative": ["3", 0],
+      "latent_image": ["8", 0]
+    },
+    "class_type": "KSampler",
+    "_meta": { "title": "⑩ 精修采样 denoise0.35 (Gate6)" }
+  },
+  "11": {
+    "inputs": {
+      "samples": ["10", 0],
+      "vae": ["1", 2]
+    },
+    "class_type": "VAEDecode",
+    "_meta": { "title": "⑪ 解码·精修帧" }
+  },
+  "12": {
+    "inputs": {
+      "filename_prefix": "lexy/gate6_refine",
+      "images": ["11", 0]
+    },
+    "class_type": "SaveImage",
+    "_meta": { "title": "⑫ 存档·Gate6 精修 (留痕)" }
+  },
+  "13": {
+    "inputs": {
+      "upscale_method": "lanczos",
+      "width": 1536,
+      "height": 2368,
+      "crop": "disabled",
+      "image": ["11", 0]
+    },
+    "class_type": "ImageScale",
+    "_meta": { "title": "⑬ 2x 放大至 1536x2368" }
+  },
+  "14": {
+    "inputs": {
+      "pixels": ["13", 0],
+      "vae": ["1", 2]
+    },
+    "class_type": "VAEEncode",
+    "_meta": { "title": "⑭ 回编码·进入细节增强" }
+  },
+  "15": {
+    "inputs": {
+      "text": "fine material texture, brushed metal, fabric weave, soft skin pores, crisp micro-details, realistic reflections on water and glass",
+      "clip": ["1", 0]
+    },
+    "class_type": "CLIPTextEncode",
+    "_meta": { "title": "⑮ 正向提示·质感细节" }
+  },
+  "16": {
+    "inputs": {
+      "seed": 88175003,
+      "steps": 12,
+      "cfg": 5.5,
+      "sampler_name": "dpmpp_2m",
+      "scheduler": "karras",
+      "denoise": 0.25,
+      "model": ["1", 1],
+      "positive": ["15", 0],
+      "negative": ["3", 0],
+      "latent_image": ["14", 0]
+    },
+    "class_type": "KSampler",
+    "_meta": { "title": "⑯ 细节增强 denoise0.25" }
+  },
+  "17": {
+    "inputs": {
+      "samples": ["16", 0],
+      "vae": ["1", 2]
+    },
+    "class_type": "VAEDecode",
+    "_meta": { "title": "⑰ 解码·细节增强帧" }
+  },
+  "18": {
+    "inputs": {
+      "upscale_method": "lanczos",
+      "width": 768,
+      "height": 1344,
+      "crop": "disabled",
+      "image": ["17", 0]
+    },
+    "class_type": "ImageScale",
+    "_meta": { "title": "⑱ 回缩至 768x1344 (交付规格)" }
+  },
+  "19": {
+    "inputs": {
+      "filename_prefix": "lexy/final_768x1344",
+      "images": ["18", 0]
+    },
+    "class_type": "SaveImage",
+    "_meta": { "title": "⑲ 输出·终帧 (喂给 MiniMax H3 图生视频)" }
+  },
+  "20": {
+    "inputs": {
+      "text": "【Gate8 红线】禁止用 AI 生成画面充当产品参考图；产品参考只允许真实照片(≥3角度)。终帧与 product-ref 逐帧比对通过后才可进入图生视频。"
+    },
+    "class_type": "Note",
+    "_meta": { "title": "⑳ 红线告示" }
+  },
+  "21": {
+    "inputs": {
+      "text": "【参数锚点】竖屏768x1344 | 底稿steps30/cfg7.0/denoise1.0 | 精修steps18/denoise0.35(产品保真提示) | 细节steps12/denoise0.25 | 种子策略:同镜三连种子+1/+2/+3"
+    },
+    "class_type": "Note",
+    "_meta": { "title": "㉑ 参数锚点" }
+  },
+  "22": {
+    "inputs": {
+      "text": "【种子与复现】固定女主/场景镜头沿用上一通过镜头的 seed；换镜头必须换 seed 并记录到 trilogy 档案。QC 用 scripts/spec_check.py 校验 768x1344。"
+    },
+    "class_type": "Note",
+    "_meta": { "title": "㉒ 复现纪律" }
+  }
+}
